@@ -1,0 +1,18 @@
+[submodule "server/adwuma-common"]
+	path = server/adwuma-common
+	url = https://github.com/dt4real/adwuma-common.git
+[submodule "server/adwuma-gig-service"]
+	path = server/adwuma-gig-service
+	url = https://github.com/dt4real/adwuma-gig-service.git
+[submodule "server/adwuma-notification-service"]
+	path = server/adwuma-notification-service
+	url = https://github.com/dt4real/adwuma-notification-service.git
+[submodule "server/adwuma-auth-service"]
+	path = server/adwuma-auth-service
+	url = https://github.com/dt4real/adwuma-auth-service.git
+[submodule "server/adwuma-gateway-service"]
+	path = server/adwuma-gateway-service
+	url = https://github.com/dt4real/adwuma-gateway-service.git
+[submodule "server/adwuma-user-service"]
+	path = server/adwuma-user-service
+	url = https://github.com/dt4real/adwuma-user-service.git
