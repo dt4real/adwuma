@@ -268,6 +268,36 @@ services:
       - elasticsearch
       - mongodb
 
+  review:
+    container_name: review_container
+    build:
+      context: ../adwuma-review-service
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - 4007:4007
+    env_file: ../adwuma-review-service/.env
+    environment:
+      - ENABLE_APM=0
+      - DATABASE_HOST=postgres_container
+      - DATABASE_USER=adwuma
+      - DATABASE_PASSWORD=api
+      - DATABASE_NAME=adwuma_reviews
+      - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
+      - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
+      - NODE_ENV=development
+      - AP_GATEWAY_URL=http://gateway_container:4000
+      - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
+      - CLOUD_NAME=dyamr9ym3
+      - CLOUD_API_KEY=385269193982147
+      - CLOUD_API_SECRET=-h9hU43QMy68AcIaMyP0ULKbibI
+      - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
+      - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
+      - ELASTIC_APM_SECRET_TOKEN=
+    depends_on:
+      - elasticsearch
+      - postgres
+
 networks:
   elastic:
     name: elastic
