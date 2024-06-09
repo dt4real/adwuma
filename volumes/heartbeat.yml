@@ -1,0 +1,80 @@
+heartbeat.config.monitors:
+  path: ${path.config}/monitors.d/*.yml
+  reload.enabled: false
+  reload.period: 5s
+
+heartbeat.monitors:
+  - type: http
+    id: adwuma-api-gateway
+    name: adwuma API Gateway Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4000/gateway-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-notification
+    name: adwuma Notification Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4001/notification-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-auth
+    name: adwuma Auth Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4002/auth-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-users
+    name: adwuma Users Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4003/user-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-gigs
+    name: adwuma Gigs Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4004/gig-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-chat
+    name: adwuma Chat Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4005/chat-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-orders
+    name: adwuma Orders Service
+    schedule: '@every 5s'
+    hosts: ["http://192.168.0.58:4006/order-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+  - type: http
+    id: adwuma-reviews
+    name: adwuma Reviews Service
+    schedule: '@every 5s'
+    urls: ["http://192.168.0.58:4007/review-health"]
+    check.request.method: GET
+    check.response.status: [200]
+
+processors:
+- add_cloud_metadata: ~
+- add_docker_metadata: ~
+
+monitoring.enabled: true
+
+output.elasticsearch:
+  hosts: ['http://elasticsearch_container:9200']
+  username: 'elastic'
+  password: 'admin1234'

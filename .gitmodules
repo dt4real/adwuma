@@ -16,3 +16,12 @@
 [submodule "server/adwuma-user-service"]
 	path = server/adwuma-user-service
 	url = https://github.com/dt4real/adwuma-user-service.git
+[submodule "server/adwuma-order-service"]
+	path = server/adwuma-order-service
+	url = https://github.com/dt4real/adwuma-order-service.git
+[submodule "server/adwuma-review-service"]
+	path = server/adwuma-review-service
+	url = https://github.com/dt4real/adwuma-review-service.git
+[submodule "adwuma-client"]
+	path = adwuma-client
+	url = https://github.com/dt4real/adwuma-client.git

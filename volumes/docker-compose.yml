@@ -10,6 +10,8 @@ services:
     command: redis-server --loglevel warning
     volumes:
       - ./docker-volumes/cache:/data
+    networks:
+      - elastic
   
   redis-commander:
     container_name: redis-commander
@@ -17,6 +19,8 @@ services:
     restart: always
     ports:
       - '8081:8081'
+    networks:
+      - elastic
     environment:
     - REDIS_HOSTS=local:redis_container:6379
   
@@ -28,6 +32,8 @@ services:
       - 27017:27017
     volumes:
       - ./docker-volumes/data:/data/db
+    networks:
+      - elastic
   
   mysql:
     container_name: mysql_container
@@ -42,6 +48,8 @@ services:
       - '3306:3306'
     volumes:
       - ./docker-volumes/mysql:/var/lib/mysql
+    networks:
+      - elastic
   
   postgres:
     container_name: postgres_container
@@ -55,6 +63,8 @@ services:
       - '5432:5432'
     volumes:
       - ./docker-volumes/postgres:/var/lib/postgresql
+    networks:
+      - elastic
   
   rabbitmq:
     container_name: rabbitmq_container
@@ -68,6 +78,8 @@ services:
       - '5672:5672'
       # Management UI
       - '15672:15672'
+    networks:
+      - elastic
 
   elasticsearch:
     container_name: elasticsearch_container
@@ -102,7 +114,7 @@ services:
       - ELASTICSEARCH_HOSTS=["http://elasticsearch_container:9200"]
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=kibana
-      - ELASTICSEARCH_SERVICEACCOUNT_TOKEN=AAEAAWVsYXN0aWMva2liYW5hL2Fkd3VtYS1raWJhbmE6VjBZTVoyODlRWHF3bTM5elBhZUN4Zw
+      - ELASTICSEARCH_SERVICEACCOUNT_TOKEN=AAEAAWVsYXN0aWMva2liYW5hL2Fkd3VtYTpqVVFXMWRaUFFJaV84MEQydWdnNEFn
       - XPACK_FLEET_AGENTS_ELASTICSEARCH_HOSTS=["http://elasticsearch_container:9200"]
     ports:
       - 5601:5601
@@ -132,6 +144,21 @@ services:
     command: ["--strict.perms=false", "-system.hostfs=/hostfs"]
     depends_on: 
       - elasticsearch
+
+  heartbeat:
+    container_name: heartbeat_container
+    image: docker.elastic.co/beats/heartbeat:8.12.2
+    user: root
+    hostname: heartbeat
+    cap_add:
+      - NET_RAW
+    networks:
+      - elastic
+    command: ["--strict.perms=false"]
+    volumes:
+      - ./heartbeat.yml:/usr/share/heartbeat/heartbeat.yml:ro
+    depends_on: 
+      - elasticsearch
   
   gateway:
     container_name: gateway_container
@@ -143,7 +170,7 @@ services:
       - 4000:4000
     env_file: ../server/adwuma-gateway-service/.env
     environment:
-        - ENABLE_APM=1
+        - ENABLE_APM=0
         - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
         - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
         - NODE_ENV=development
@@ -151,17 +178,19 @@ services:
         - SECRET_KEY_TWO=d66e377018c0bc0b5772bbc9b131e6d9
         - CLIENT_URL=http://localhost:3000
         - AUTH_BASE_URL=http://auth_container:4002
-        - USERS_BASE_URL=http://localhost:4003
-        - GIG_BASE_URL=http://localhost:4004
-        - MESSAGE_BASE_URL=http://localhost:4005
-        - ORDER_BASE_URL=http://localhost:4006
-        - REVIEW_BASE_URL=http://localhost:4007
+        - USERS_BASE_URL=http://users_container:4003
+        - GIG_BASE_URL=http://gig_container:4004
+        - MESSAGE_BASE_URL=http://chat_container:4005
+        - ORDER_BASE_URL=http://order_container:4006
+        - REVIEW_BASE_URL=http://review_container:4007
         - REDIS_HOST=redis://redis_container:6379
         - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
         - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
         - ELASTIC_APM_SECRET_TOKEN=
     depends_on:
       - elasticsearch
+    networks:
+      - elastic
 
   notifications:
     container_name: notification_container
@@ -173,17 +202,20 @@ services:
       - 4001:4001
     env_file: ../server/adwuma-notification-service/.env
     environment:
-      - ENABLE_APM=1
+      - ENABLE_APM=0
       - NODE_ENV=development
       - CLIENT_URL=http://localhost:3000
       - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
-      - SENDER_EMAIL=valerie.barton89@ethereal.email
-      - SENDER_EMAIL_PASSWORD=E3cUWA7BAgZnjTfWj5
+      - SENDER_EMAIL=milford.littel@ethereal.email
+      - SENDER_EMAIL_PASSWORD=4E8shhUWTyXdgv8bx9
       - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
       - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
       - ELASTIC_APM_SECRET_TOKEN=
     depends_on:
       - elasticsearch
+      - rabbitmq
+    networks:
+      - elastic
 
   auth:
     container_name: auth_container
@@ -195,23 +227,25 @@ services:
       - 4002:4002
     env_file: ../server/adwuma-auth-service/.env
     environment:
-      - ENABLE_APM=1
+      - ENABLE_APM=0
       - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
       - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
       - NODE_ENV=development
-      - AP_GATEWAY_URL=http://gateway_container:4000
+      - API_GATEWAY_URL=http://gateway_container:4000
       - CLIENT_URL=http://localhost:3000
       - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
       - MYSQL_DB=mysql://adwuma:api@mysql_container:3306/adwuma_auth
-      - CLOUD_NAME=dyamr9ym3
-      - CLOUD_API_KEY=385269193982147
-      - CLOUD_API_SECRET=-h9hU43QMy68AcIaMyP0ULKbibI
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
       - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
       - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
       - ELASTIC_APM_SECRET_TOKEN=
     depends_on:
       - elasticsearch
       - mysql
+    networks:
+      - elastic
 
   users:
     container_name: users_container
@@ -223,16 +257,16 @@ services:
       - 4003:4003
     env_file: ../server/adwuma-user-service/.env
     environment:
-      - ENABLE_APM=1
+      - ENABLE_APM=0
       - DATABASE_URL=mongodb://mongodb_container:27017/adwuma-users
       - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
       - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
       - NODE_ENV=development
-      - AP_GATEWAY_URL=http://gateway_container:4000
+      - API_GATEWAY_URL=http://gateway_container:4000
       - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
-      - CLOUD_NAME=dyamr9ym3
-      - CLOUD_API_KEY=385269193982147
-      - CLOUD_API_SECRET=-h9hU43QMy68AcIaMyP0ULKbibI
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
       - REDIS_HOST=redis://redis_container:6379
       - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
       - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
@@ -240,43 +274,108 @@ services:
     depends_on:
       - elasticsearch
       - mongodb
+    networks:
+      - elastic
 
-  chat:
-    container_name: chat_container
+  gig:
+    container_name: gig_container
     build:
-      context: ../adwuma-chat-service
+      context: ../server/adwuma-gig-service
       dockerfile: Dockerfile.dev
     restart: always
     ports:
-      - 4005:4005
-    env_file: ../adwuma-chat-service/.env
+      - 4004:4004
+    env_file: ../server/adwuma-gig-service/.env
     environment:
-      - ENABLE_APM=1
-      - DATABASE_URL=mongodb://127.0.0.1:27017/adwuma-chat
+      - ENABLE_APM=0
+      - DATABASE_URL=mongodb://mongodb_container:27017/adwuma-gig
       - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
       - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
       - NODE_ENV=development
-      - AP_GATEWAY_URL=http://gateway_container:4000
+      - API_GATEWAY_URL=http://gateway_container:4000
       - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
-      - CLOUD_NAME=
-      - CLOUD_API_KEY=
-      - CLOUD_API_SECRET=
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
+      - REDIS_HOST=redis://redis_container:6379
       - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
       - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
       - ELASTIC_APM_SECRET_TOKEN=
     depends_on:
       - elasticsearch
       - mongodb
+    networks:
+      - elastic
+
+  chat:
+    container_name: chat_container
+    build:
+      context: ../server/adwuma-chat-service
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - 4005:4005
+    env_file: ../server/adwuma-chat-service/.env
+    environment:
+      - ENABLE_APM=0
+      - DATABASE_URL=mongodb://127.0.0.1:27017/adwuma-chat
+      - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
+      - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
+      - NODE_ENV=development
+      - API_GATEWAY_URL=http://gateway_container:4000
+      - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
+      - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
+      - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
+      - ELASTIC_APM_SECRET_TOKEN=
+    depends_on:
+      - elasticsearch
+      - mongodb
+    networks:
+      - elastic
+
+  order:
+    container_name: order_container
+    build:
+      context: ../server/adwuma-order-service
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - 4006:4006
+    env_file: ../server/adwuma-order-service/.env
+    environment:
+      - ENABLE_APM=0
+      - DATABASE_URL=mongodb://mongodb_container:27017/adwuma-chat
+      - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
+      - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
+      - NODE_ENV=development
+      - API_GATEWAY_URL=http://gateway_container:4000
+      - CLIENT_URL=http://localhost:3000
+      - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
+      - STRIPE_API_KEY=sk_test_51Iud04JLtjPzYiyvv1I0Mmc0fACy6roeCY7oE7iPt15LP0zd2NKZWvYSbR4MvNrJRV6NGH89XK562pBd47Lab6LV005m4Lm44d
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
+      - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
+      - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
+      - ELASTIC_APM_SECRET_TOKEN=
+    depends_on:
+      - elasticsearch
+      - mongodb
+    networks:
+      - elastic
 
   review:
     container_name: review_container
     build:
-      context: ../adwuma-review-service
+      context: ../server/adwuma-review-service
       dockerfile: Dockerfile.dev
     restart: always
     ports:
       - 4007:4007
-    env_file: ../adwuma-review-service/.env
+    env_file: ../server/adwuma-review-service/.env
     environment:
       - ENABLE_APM=0
       - DATABASE_HOST=postgres_container
@@ -286,17 +385,41 @@ services:
       - GATEWAY_JWT_TOKEN=1282722b942e08c8a6cb033aa6ce850e
       - JWT_TOKEN=8db8f85991bb28f45ac0107f2a1b349c
       - NODE_ENV=development
-      - AP_GATEWAY_URL=http://gateway_container:4000
+      - API_GATEWAY_URL=http://gateway_container:4000
       - RABBITMQ_ENDPOINT=amqp://adwuma:adwumapass@rabbitmq_container:5672
-      - CLOUD_NAME=dyamr9ym3
-      - CLOUD_API_KEY=385269193982147
-      - CLOUD_API_SECRET=-h9hU43QMy68AcIaMyP0ULKbibI
+      - CLOUD_NAME=dvwyfinte
+      - CLOUD_API_KEY=582135532315594
+      - CLOUD_API_SECRET=iYIuRY1RRq5uhec6Sg7yhmv0ByQ
       - ELASTIC_SEARCH_URL=http://elastic:admin1234@elasticsearch_container:9200
       - ELASTIC_APM_SERVER_URL=http://apm_server_container:8200
       - ELASTIC_APM_SECRET_TOKEN=
     depends_on:
       - elasticsearch
       - postgres
+    networks:
+      - elastic
+
+  jenkins:
+    container_name: jenkins_container
+    image: jenkins/jenkins:lts
+    privileged: true
+    user: root
+    ports:
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - ./docker-volumes/jenkins_compose/jenkins_configuration:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  jenkins-agent:
+    container_name: jenkins_agent_container
+    image: jenkins/ssh-agent:jdk11
+    privileged: true
+    user: root
+    expose:
+      - 22
+    environment:
+      - JENKINS_AGENT_SSH_PUBKEY=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+5NL1Az6mqaXyNLTCQZH5lllW0rhHVfdsQuMMD4zJJY26+JkT81TOZA67PctQlzUKRf2ccqRPofBlc7kd3y1dT7vBAdzJVr15WwP/wNcgxVwZbvdTKSXVBW4kTL5uCXt+0CIBX+Z1uQkK7bA2w8ToQxIdR90V4+JvKuUkZsxgvS5Exubg8jlUp8tDrd79fRO8QCzkEQ2cPRzoTdxZGiab5NxoBxDRyl7VUPhI+VNlOoGsbtWwY6YgVglJVF6ro1mxF6hHx9cLhNzd+Vnuy+M3q3l1TQB9DElI841xb9kzpDnDa7Xiw3VGup4IbC8NFcmdDnS8caoDtUXDMBS7kaTJMsL55f/v7FpYbjFc0XJKlzyn030dxFbX2R3cCi6cnqwH8JSUA/UEYgV1EqviROahLAtm1uazMVaoefRF8LYv7+/8ESVEX8zBix5ZvjPR2w452R1THRUqahUmxmmhMuhPXKDMrLWlCZIPlQ5eV+QnFzLa3eA+7F+WenZQ0BYj/ds= user@DESKTOP-7F0HDMJ
 
 networks:
   elastic:
